@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:request-config name="HTTP_Request_Configuration" protocol="HTTPS" host="api.nasa.gov" port="443" doc:name="HTTP Request Configuration"/>
+    <flow name="choice_and_or">
+        <poll doc:name="Poll">
+            <http:request config-ref="HTTP_Request_Configuration" path="planetary/apod" method="GET" doc:name="HTTP">
+                <http:request-builder>
+                    <http:query-param paramName="concept_tags" value="True"/>
+                    <http:query-param paramName="api_key" value="NNKOjkoul8n1CH18TWA9gwngW1s1SmjESPjNoUFo"/>
+                </http:request-builder>
+            </http:request>
+        </poll>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <set-variable variableName="explanation" value="#[json:/explanation]" doc:name="explanation"/>
+        <choice doc:name="Choice">
+            <when expression="#[explanation.contains('Stars') &amp;&amp; explanation.contains('dark') &amp;&amp; explanation.length()&gt;10]">
+                <logger message="This is the correct one!" level="INFO" doc:name="Logger"/>
+                <choice doc:name="Choice">
+                    <when expression="#[explanation.charAt(0)=='S' || explanation.charAt(1)=='x']">
+                        <logger message="This is again correct!" level="INFO" doc:name="Logger"/>
+                        <choice doc:name="Choice">
+                            <when expression="#[json:/explanation.contains('Stars') &amp;&amp; json:/explanation.startsWith('S')]">
+                                <logger message="won't be called - JSON has no &amp;&amp;" level="INFO" doc:name="Logger"/>
+                            </when>
+                            <when expression="#[json:/explanation.startWith('X')]">
+                                <logger message="wont be called. Explanation start with S" level="INFO" doc:name="Logger"/>
+                            </when>
+                            <otherwise>
+                                <logger message="Only Correct choice" level="INFO" doc:name="Logger"/>
+                            </otherwise>
+                        </choice>
+                    </when>
+                    <otherwise>
+                        <logger message="never here!" level="INFO" doc:name="Logger"/>
+                    </otherwise>
+                </choice>
+            </when>
+            <otherwise>
+                <logger message="It wont never come here!" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+    </flow>
+</mule>
