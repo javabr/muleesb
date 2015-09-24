@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <http:request-config name="HTTP_Request_Configuration" protocol="HTTPS" host="api.nasa.gov" port="443" doc:name="HTTP Request Configuration"/>
+    <flow name="foreach_batchFlow">
+        <poll doc:name="Poll">
+            <http:request config-ref="HTTP_Request_Configuration" path="planetary/apod" method="GET" doc:name="HTTP">
+                <http:request-builder>
+                    <http:query-param paramName="concept_tags" value="True"/>
+                    <http:query-param paramName="api_key" value="NNKOjkoul8n1CH18TWA9gwngW1s1SmjESPjNoUFo"/>
+                </http:request-builder>
+            </http:request>
+        </poll>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <set-payload value="#[json:/explanation]" doc:name="Set Payload"/>
+        <set-payload value="#[payload.split('')]" doc:name="Set Payload"/>
+        <foreach batchSize="10" doc:name="For Each">
+            <logger message="Printing 10 by 10 string size: #[payload]" level="INFO" doc:name="Logger"/>
+        </foreach>
+    </flow>
+</mule>
