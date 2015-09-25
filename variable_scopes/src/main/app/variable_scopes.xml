@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+    <http:request-config name="HTTP_Request_Configuration" protocol="HTTPS" host="api.nasa.gov" port="443" doc:name="HTTP Request Configuration"/>
+    <flow name="variable_scopes">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="10" timeUnit="SECONDS"/>
+            <http:request config-ref="HTTP_Request_Configuration" path="planetary/apod" method="GET" doc:name="HTTP">
+                <http:request-builder>
+                    <http:query-param paramName="concept_tags" value="True"/>
+                    <http:query-param paramName="api_key" value="NNKOjkoul8n1CH18TWA9gwngW1s1SmjESPjNoUFo"/>
+                </http:request-builder>
+            </http:request>
+        </poll>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <set-payload value="#[payload.charAt(2)]" doc:name="gets letter &quot;u&quot;"/>
+        <set-variable variableName="flow1" value="#[payload] on flowVar" doc:name="flow1"/>
+        <set-session-variable variableName="session1" value="#[payload] on session" doc:name="session1"/>
+        <flow-ref name="subflow" doc:name="call subflow"/>
+        <logger message="value for subflow var is visible on main flow : #[flowVars.subflowVar]" level="INFO" doc:name="prints subflowVar"/>
+        <logger message="value of session variable from subflow is visible here : #[sessionVars.sessionSubflow]" level="INFO" doc:name="prints sessionVar"/>
+        <flow-ref name="public_flow" doc:name="public_flow"/>
+        <logger message="flow2 does  exist here #[flowVars.flow2]" level="INFO" doc:name="flow2 does exist here"/>
+        <logger message="the value for session2 is #[sessionVars.session2]" level="INFO" doc:name="session2 does exist here"/>
+    </flow>
+    <sub-flow name="subflow">
+        <logger message="flow1 does exist here: #[flowVars.flow1]" level="INFO" doc:name="flow1 exists!"/>
+        <logger message="session1 does exist here: #[sessionVars.session1]" level="INFO" doc:name="session1 is here as well"/>
+        <set-variable variableName="subflowVar" value="a subflow variable" doc:name="subflowVar"/>
+        <set-session-variable variableName="sessionSubflow" value="this is a session variable" doc:name="sessionSubflow"/>
+    </sub-flow>
+    <flow name="public_flow" processingStrategy="synchronous">
+        <set-variable variableName="flow2" value="flow2 value!" doc:name="flow2"/>
+        <set-session-variable variableName="session2" value="this is the session2 value" doc:name="session2"/>
+        <logger message="Value of flow1 on public flow: #[flowVars.flow1]" level="INFO" doc:name="flow1 exist here"/>
+        <logger message="value of session 1 here in public_flow: #[sessionVars.session1]" level="INFO" doc:name="session1 value:"/>
+    </flow>
+    <flow name="variable_scopesFlow">
+        <poll doc:name="Poll">
+            <fixed-frequency-scheduler frequency="10" timeUnit="SECONDS"/>
+            <logger message="sessions are not visible in assync flows so session1 here is null: #[sessionVars.session1]" level="INFO" doc:name="session1 will be always null here"/>
+        </poll>
+        <logger message="and session1 still null here: #[sessionVars.session1]" level="INFO" doc:name="and also here: always null!!!"/>
+        <logger message="#[sessionVars.session2] was the value for session2." level="INFO" doc:name="session2 does not exist here"/>
+    </flow>
+</mule>
