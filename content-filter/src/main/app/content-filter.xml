@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+  xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:quartz="http://www.mulesoft.org/schema/mule/quartz"
+  xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+  xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/quartz http://www.mulesoft.org/schema/mule/quartz/current/mule-quartz.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+  <http:request-config name="HTTP_Request_Configuration" host="jsonplaceholder.typicode.com" port="80"
+    doc:name="HTTP Request Configuration"/>
+  <vm:connector name="VM" validateConnections="true" doc:name="VM"/>
+  <flow name="content-filterFlow">
+    <quartz:inbound-endpoint jobName="qjob" repeatInterval="20000" responseTimeout="10000"
+      doc:name="Quartz">
+      <quartz:event-generator-job stateful="true"/>
+    </quartz:inbound-endpoint>
+    <http:request config-ref="HTTP_Request_Configuration" path="photos" method="GET" doc:name="HTTP"/>
+    <object-to-string-transformer doc:name="Object to String"/>
+    <json:json-to-object-transformer returnClass="java.util.ArrayList" doc:name="JSON to Object"/>
+    <set-payload value="#[payload.subList(0, 10)]" doc:name="Reduces the size for the payload"/>
+    <vm:outbound-endpoint exchange-pattern="one-way" path="/vm" doc:name="VM"/>
+  </flow>
+  <flow name="process_only_first_10">
+    <vm:inbound-endpoint exchange-pattern="one-way" path="/vm" connector-ref="VM" doc:name="VM"/>
+    <echo-component doc:name="Is only interested on the first 10 items!"/>
+  </flow>
+</mule>
